@@ -163,6 +163,12 @@ install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/ogre_media"
   DESTINATION "share/${PROJECT_NAME}"
   USE_SOURCE_PERMISSIONS)
 
+option(RVIZ_BUILD_BENCHMARKS "Build manual rendering benchmarks" OFF)
+if(RVIZ_BUILD_BENCHMARKS)
+  add_executable(point_cloud_benchmark benchmarks/point_cloud_benchmark.cpp)
+  target_link_libraries(point_cloud_benchmark rviz_rendering Qt6::Widgets)
+endif()
+
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   ament_lint_auto_find_test_dependencies()
