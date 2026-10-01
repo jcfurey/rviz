@@ -30,32 +30,124 @@
 
 #include <gmock/gmock.h>
 
+#include <ostream>
+#include <vector>
+
 #include <QApplication>  // NOLINT
+#include <QResizeEvent>  // NOLINT
 #include <QTest>  // NOLINT
 #include <OgreViewport.h>  // NOLINT
 
 #include "rviz_rendering/render_window.hpp"
 #include "ogre_testing_environment.hpp"
 
+using rviz_rendering::RenderWindowOgreAdapter;
+
+void PrintTo(const QSize & size, std::ostream * os)
+{
+  *os << size.width() << "x" << size.height();
+}
+
+namespace
+{
+
+QSize viewportSize(const Ogre::Viewport * viewport)
+{
+  return QSize(viewport->getActualWidth(), viewport->getActualHeight());
+}
+
+// Records every size the viewport takes, including one that is
+// corrected again before the resize returns.
+class ViewportSizeRecorder : public Ogre::Viewport::Listener
+{
+public:
+  explicit ViewportSizeRecorder(Ogre::Viewport * viewport)
+  : viewport_(viewport)
+  {
+    viewport_->addListener(this);
+  }
+
+  ~ViewportSizeRecorder() override
+  {
+    viewport_->removeListener(this);
+  }
+
+  void viewportDimensionsChanged(Ogre::Viewport * viewport) override
+  {
+    sizes.push_back(viewportSize(viewport));
+  }
+
+  std::vector<QSize> sizes;
+
+private:
+  Ogre::Viewport * viewport_;
+};
+
+// Holds rendering while waiting for a resize, and records the viewport size
+// right after the window has handled that resize.
+class ResizeProbeWindow : public rviz_rendering::RenderWindow
+{
+public:
+  bool hold_rendering = false;
+  QSize resized_to;
+  QSize viewport_size_after_resize;
+
+protected:
+  bool event(QEvent * event) override
+  {
+    if (hold_rendering && event->type() == QEvent::UpdateRequest) {
+      return true;
+    }
+    const bool handled = RenderWindow::event(event);
+    const auto * viewport = RenderWindowOgreAdapter::getOgreViewport(this);
+    if (event->type() == QEvent::Resize && viewport) {
+      resized_to = static_cast<QResizeEvent *>(event)->size();
+      viewport_size_after_resize = viewportSize(viewport);
+    }
+    return handled;
+  }
+
+  void exposeEvent(QExposeEvent * event) override
+  {
+    if (!hold_rendering) {
+      RenderWindow::exposeEvent(event);
+    }
+  }
+};
+
+}  // namespace
+
 TEST(RenderWindowScaling, viewport_matches_native_size_after_resizing)
 {
   rviz_rendering::OgreTestingEnvironment environment;
   environment.setUpOgreTestEnvironment();
-  rviz_rendering::RenderWindow window;
+  ResizeProbeWindow window;
   window.resize(321, 243);
   window.show();
   ASSERT_TRUE(QTest::qWaitForWindowExposed(&window));
+  window.renderNow();
 
-  for (const auto & size : {QSize(321, 243), QSize(503, 301), QSize(257, 199)}) {
-    window.resize(size);
-    QTest::qWait(50);
-    window.renderNow();
-    const auto * viewport = rviz_rendering::RenderWindowOgreAdapter::getOgreViewport(&window);
-    ASSERT_NE(viewport, nullptr);
-    EXPECT_EQ(window.size(), size);
+  auto * viewport = RenderWindowOgreAdapter::getOgreViewport(&window);
+  ASSERT_NE(viewport, nullptr);
+  EXPECT_EQ(viewportSize(viewport), window.size() * window.devicePixelRatio());
+
+  ViewportSizeRecorder recorder(viewport);
+  for (const auto & size : {QSize(503, 301), QSize(257, 199), QSize(321, 243)}) {
     const auto native_size = size * window.devicePixelRatio();
-    EXPECT_EQ(viewport->getActualWidth(), native_size.width());
-    EXPECT_EQ(viewport->getActualHeight(), native_size.height());
+    recorder.sizes.clear();
+
+    window.hold_rendering = true;
+    window.resize(size);
+    ASSERT_TRUE(QTest::qWaitFor([&window, &size]() {return window.resized_to == size;}));
+    window.hold_rendering = false;
+    EXPECT_EQ(window.size(), size);
+    // Nothing has rendered since the resize, so a fix deferred to the next frame fails here.
+    EXPECT_EQ(window.viewport_size_after_resize, native_size);
+
+    window.renderNow();
+    EXPECT_EQ(viewportSize(viewport), native_size);
+    // Includes sizes that Ogre corrected again before the resize returned.
+    EXPECT_THAT(recorder.sizes, testing::Each(native_size));
   }
 }
 
