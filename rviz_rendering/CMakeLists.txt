@@ -187,11 +187,22 @@ if(BUILD_TESTING)
     target_link_libraries(string_helper_test rviz_rendering)
   endif()
 
+  ament_add_gmock(pixel_scaling_test test/rviz_rendering/pixel_scaling_test.cpp)
+  if(TARGET pixel_scaling_test)
+    target_link_libraries(pixel_scaling_test rviz_rendering)
+  endif()
+
   find_package(Qt6 REQUIRED COMPONENTS Test)
   ament_add_gmock_executable(render_window_scaling_test test/rviz_rendering/render_window_scaling_test.cpp)
   if(TARGET render_window_scaling_test)
     target_link_libraries(render_window_scaling_test rviz_rendering rviz_rendering_test_utils Qt6::Widgets Qt6::Test)
-    foreach(scale 1 1.25 1.5 2)
+    # Cocoa uses the native backing scale instead of forced Qt scale factors.
+    # Exercise its native scale; keep the forced matrix on the other backends.
+    set(render_window_test_scales 1)
+    if(NOT APPLE)
+      list(APPEND render_window_test_scales 1.25 1.5 2)
+    endif()
+    foreach(scale ${render_window_test_scales})
       set(test_name render_window_scaling_test_${scale})
       set(result_file "${AMENT_TEST_RESULTS_DIR}/${PROJECT_NAME}/${test_name}.gtest.xml")
       ament_add_test(${test_name}

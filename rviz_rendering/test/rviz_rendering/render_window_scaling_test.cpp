@@ -122,7 +122,10 @@ TEST(RenderWindowScaling, viewport_matches_native_size_after_resizing)
   rviz_rendering::OgreTestingEnvironment environment;
   environment.setUpOgreTestEnvironment();
   ResizeProbeWindow window;
-  window.resize(321, 243);
+  // Multiples of 16 remain exact when the tested scales combine with quarter-step
+  // desktop scales. Odd sizes can be rounded in multiple coordinate spaces by Qt
+  // and the window system; their conversion is covered in pixel_scaling_test.
+  window.resize(320, 240);
   window.show();
   ASSERT_TRUE(QTest::qWaitForWindowExposed(&window));
   window.renderNow();
@@ -132,7 +135,7 @@ TEST(RenderWindowScaling, viewport_matches_native_size_after_resizing)
   EXPECT_EQ(viewportSize(viewport), window.size() * window.devicePixelRatio());
 
   ViewportSizeRecorder recorder(viewport);
-  for (const auto & size : {QSize(503, 301), QSize(257, 199), QSize(321, 243)}) {
+  for (const auto & size : {QSize(512, 304), QSize(256, 192), QSize(320, 240)}) {
     const auto native_size = size * window.devicePixelRatio();
     recorder.sizes.clear();
 
