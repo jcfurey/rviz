@@ -31,6 +31,7 @@
 #include <gmock/gmock.h>
 
 #include <memory>
+#include <utility>
 
 #include <QApplication>  // NOLINT
 #include <QMouseEvent>  // NOLINT
@@ -97,6 +98,7 @@ public:
 
   int processMouseEvent(rviz_common::ViewportMouseEvent & event) override
   {
+    ++event_count;
     position = QPoint(event.x, event.y);
     previous_position = QPoint(event.last_x, event.last_y);
     return 0;
@@ -104,6 +106,7 @@ public:
 
   QPoint position;
   QPoint previous_position;
+  int event_count = 0;
 };
 
 TEST_F(ViewportMouseEventTest, manager_delivers_device_coordinates_without_scaling_twice)
@@ -131,6 +134,55 @@ TEST_F(ViewportMouseEventTest, manager_delivers_device_coordinates_without_scali
   const auto ratio = panel.getRenderWindow()->devicePixelRatio();
   EXPECT_EQ(tool.position, QPoint(qRound(101 * ratio), qRound(73 * ratio)));
   EXPECT_EQ(tool.previous_position, QPoint(qRound(99 * ratio), qRound(71 * ratio)));
+  manager.getToolManager()->setCurrentTool(nullptr);
+}
+
+TEST_F(ViewportMouseEventTest, panel_preserves_device_pixel_history_between_mouse_and_wheel_events)
+{
+  rviz_common::RenderPanel panel;
+  panel.resize(320, 240);
+  panel.winId();
+  panel.show();
+  ASSERT_TRUE(QTest::qWaitForWindowExposed(panel.windowHandle()));
+  panel.getRenderWindow()->renderNow();
+  auto node = std::make_shared<rviz_common::ros_integration::RosNodeAbstraction>("scaling_test");
+  rviz_common::VisualizationManager manager(
+    &panel, node, nullptr, std::make_shared<rclcpp::Clock>());
+  panel.initialize(&manager);
+  manager.initialize();
+  RecordingTool tool;
+  manager.getToolManager()->setCurrentTool(&tool);
+
+  const auto ratio = panel.getRenderWindow()->devicePixelRatio();
+  const std::pair<QEvent::Type, int> samples[] = {
+    {QEvent::MouseButtonPress, 109}, {QEvent::MouseMove, 119},
+    {QEvent::Wheel, 127}, {QEvent::Wheel, 137},
+    {QEvent::MouseMove, 149}, {QEvent::MouseButtonRelease, 149}};
+  QPoint previous_position;
+  int event_count = 0;
+  for (const auto & [type, y] : samples) {
+    SCOPED_TRACE(event_count);
+    // A vertical drag at native pixel x=151 has a fractional logical x at every
+    // non-unit scale under test. Its horizontal delta must remain zero.
+    const QPoint device_position(151, y);
+    const QPointF logical_position(151.0 / ratio, y / ratio);
+    if (type == QEvent::Wheel) {
+      QWheelEvent wheel(
+        logical_position, logical_position, QPoint(), QPoint(0, 120),
+        Qt::LeftButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+      QApplication::sendEvent(panel.getRenderWindow(), &wheel);
+    } else {
+      const auto button = type == QEvent::MouseMove ? Qt::NoButton : Qt::LeftButton;
+      const auto buttons = type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton;
+      QMouseEvent mouse(type, logical_position, logical_position, button, buttons, Qt::NoModifier);
+      QApplication::sendEvent(panel.getRenderWindow(), &mouse);
+    }
+    EXPECT_EQ(tool.event_count, ++event_count);
+    EXPECT_EQ(tool.position, device_position);
+    EXPECT_EQ(tool.previous_position, previous_position);
+    previous_position = device_position;
+  }
+
   manager.getToolManager()->setCurrentTool(nullptr);
 }
 
