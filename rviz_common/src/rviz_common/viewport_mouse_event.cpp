@@ -31,10 +31,10 @@
 #include "rviz_common/viewport_mouse_event.hpp"
 
 #include <QMouseEvent>
+#include <QPointF>
 #include <QWheelEvent>
 
 #include "rviz_common/render_panel.hpp"
-#include "rviz_rendering/pixel_scaling.hpp"
 #include "rviz_rendering/render_window.hpp"
 
 namespace rviz_common
@@ -55,10 +55,12 @@ ViewportMouseEvent::ViewportMouseEvent(RenderPanel * p, QMouseEvent * e, int lx,
   last_y(0)
 {
   const qreal pixel_ratio = panel->getRenderWindow()->devicePixelRatio();
-  x = rviz_rendering::toDevicePixels(e->position().x(), pixel_ratio);
-  y = rviz_rendering::toDevicePixels(e->position().y(), pixel_ratio);
-  last_x = rviz_rendering::toDevicePixels(lx, pixel_ratio);
-  last_y = rviz_rendering::toDevicePixels(ly, pixel_ratio);
+  const QPoint position = (e->position() * pixel_ratio).toPoint();
+  const QPoint previous_position = (QPointF(lx, ly) * pixel_ratio).toPoint();
+  x = position.x();
+  y = position.y();
+  last_x = previous_position.x();
+  last_y = previous_position.y();
 }
 
 ViewportMouseEvent::ViewportMouseEvent(RenderPanel * p, QWheelEvent * e, int lx, int ly)
@@ -75,10 +77,12 @@ ViewportMouseEvent::ViewportMouseEvent(RenderPanel * p, QWheelEvent * e, int lx,
   last_y(0)
 {
   const qreal pixel_ratio = panel->getRenderWindow()->devicePixelRatio();
-  x = rviz_rendering::toDevicePixels(e->position().x(), pixel_ratio);
-  y = rviz_rendering::toDevicePixels(e->position().y(), pixel_ratio);
-  last_x = rviz_rendering::toDevicePixels(lx, pixel_ratio);
-  last_y = rviz_rendering::toDevicePixels(ly, pixel_ratio);
+  const QPoint position = (e->position() * pixel_ratio).toPoint();
+  const QPoint previous_position = (QPointF(lx, ly) * pixel_ratio).toPoint();
+  x = position.x();
+  y = position.y();
+  last_x = previous_position.x();
+  last_y = previous_position.y();
 }
 
 bool ViewportMouseEvent::left()
