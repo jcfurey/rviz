@@ -1366,7 +1366,9 @@ void InteractiveMarkerControl::beginMouseMovement(
   parent_position_at_mouse_down_ = parent_->getPosition();
   parent_orientation_at_mouse_down_ = parent_->getOrientation();
 
-  // Mixed units are harmless: event.x is added back in getRelativeMouseMotion().
+  // getRelativeMouseMotion() adds event.x/y back to recover the logical cursor
+  // position. Warping to whole logical pixels can introduce a rounding error
+  // of up to +/-1 device pixel at scale factors up to 2x.
   QPoint absolute_mouse = QCursor::pos();
   mouse_relative_to_absolute_x_ = absolute_mouse.x() - event.x;
   mouse_relative_to_absolute_y_ = absolute_mouse.y() - event.y;
