@@ -56,6 +56,7 @@ def build(packages, label, env):
          "--install-base", str(ROOT / "install"), "--packages-select", *packages,
          "--packages-ignore", "rviz_ogre_vendor", "--executor", "sequential",
          "--cmake-args", "-G", "Ninja", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+         "-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
          "-DBUILD_TESTING=ON", "-DEnableDisplayTests=True", "-DCMAKE_OSX_ARCHITECTURES=arm64",
          "-DCMAKE_OSX_DEPLOYMENT_TARGET=14.0", "-DCMAKE_OSX_SYSROOT=" + sdk,
          "-DCMAKE_INSTALL_RPATH=" + ";".join(str(path) for path in rpaths)], env, label)
@@ -98,6 +99,34 @@ def test(package, label, arguments, env):
         shutil.copytree(results, ARTIFACTS / (label + "-results"), dirs_exist_ok=True)
 
 
+def diagnostics(env):
+    isolate_plugins(env)
+    commands = ARTIFACTS / "lldb-commands.txt"
+    commands.write_text(
+        "settings set target.disable-aslr false\n"
+        "settings set target.env-vars DYLD_LIBRARY_PATH=" + env["DYLD_LIBRARY_PATH"] + "\n"
+        "run\nthread backtrace all\nimage list\nquit\n")
+    command = ["/usr/bin/lldb", "--batch", "--source", str(commands), "--",
+               str(ROOT / "build/rviz_common/viewport_mouse_event_test"),
+               "--gtest_filter=ViewportMouseEventTest.mouse_coordinates_include_fractional_scaling"]
+    try:
+        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True,
+                                text=True, errors="replace", timeout=60)
+        output = result.stdout + result.stderr
+    except subprocess.TimeoutExpired as error:
+        output = "LLDB timed out after 60 seconds.\n"
+        for part in (error.stdout, error.stderr):
+            if part:
+                output += part.decode(errors="replace") if isinstance(part, bytes) else part
+    (ARTIFACTS / "lldb-mouse.log").write_text(output)
+    print(output, flush=True)
+    reports = ARTIFACTS / "native-crash-reports"
+    reports.mkdir(exist_ok=True)
+    for report in (Path.home() / "Library/Logs/DiagnosticReports").glob("*"):
+        if report.is_file() and report.name.startswith(("viewport_mouse", "render_window_scal")):
+            shutil.copy2(report, reports / report.name)
+
+
 phase = sys.argv[1]
 env = environment()
 if phase == "environment":
@@ -117,6 +146,8 @@ elif phase == "build-plugins":
 elif phase == "mouse":
     isolate_plugins(env)
     test("rviz_common", "isolated-mouse", ["-R", "^viewport_mouse_event_test_"], env)
+elif phase == "diagnostics":
+    diagnostics(env)
 elif phase == "matrix":
     # The CMake registrations use Cocoa's native backing scale for viewport/menu
     # tests; mouse/focus cases also run at forced scales 1, 1.25, 1.5, and 2.
