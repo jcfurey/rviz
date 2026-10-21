@@ -1,0 +1,83 @@
+name: RViz scaling CI (macOS)
+run-name: RViz 1870 fixtures at 7fac2776 (macOS Apple Silicon)
+
+on:
+  push:
+    branches: [ci/pr1870]
+    paths:
+      - .github/workflows/rviz-scaling-macos.yml
+      - .github/ci/macos.py
+      - .github/ci/macos-pixi.toml
+
+permissions:
+  contents: read
+
+env:
+  RVIZ_TEST_REF: 7fac27768fa3eaa562ee7bcdd070324418824fb2
+  ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  QT_QPA_PLATFORM: cocoa
+  QT_SCALE_FACTOR: '1'
+  MACOSX_DEPLOYMENT_TARGET: '14.0'
+
+jobs:
+  build-and-test:
+    if: github.repository == 'jcfurey/rviz'
+    name: Rolling / macOS Apple Silicon / Cocoa
+    runs-on: macos-15
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out fork CI configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ci-config
+          persist-credentials: false
+      - name: Check out the exact follow-up commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RVIZ_TEST_REF }}
+          path: rviz-under-test
+          persist-credentials: false
+      - name: Install RoboStack Rolling and Qt 6.11 for Apple Silicon
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          manifest-path: ci-config/.github/ci/macos-pixi.toml
+          cache: false
+      - name: Record native display scale and build environment
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py environment
+      - name: Build rendering and common
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py build-common
+      - name: Test mouse scaling without downstream plugins
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py mouse
+      - name: Build default plugins and test support
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py build-plugins
+      - name: Test native Cocoa viewport and marker menus plus forced-scale focus
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py matrix
+      - name: Run broader unit suites
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+            python ci-config/.github/ci/macos.py gmock
+      - name: Upload build, display, and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rviz-1870-macos-arm64-cocoa
+          path: |
+            validation/artifacts
+            validation/build/**/test_results
+            ci-config/.github/ci/pixi.lock
+          if-no-files-found: warn
+          retention-days: 14

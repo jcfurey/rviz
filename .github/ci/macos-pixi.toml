@@ -1,0 +1,21 @@
+[workspace]
+name = "rviz-1870-macos-ci"
+channels = ["https://repo.prefix.dev/robostack-rolling", "https://repo.prefix.dev/conda-forge"]
+platforms = ["osx-arm64"]
+
+[dependencies]
+python = "3.14.*"
+ros2-rviz-default-plugins = "16.0.2"
+ros2-rviz-rendering-tests = "16.0.2"
+ros2-rviz-visual-testing-framework = "16.0.2"
+ros2-ament-cmake-ros-core = "0.16.*"
+ros2-ament-cmake-gmock = "2.9.*"
+ros2-ament-lint-common = "0.21.*"
+colcon-common-extensions = "*"
+cxx-compiler = "*"
+cmake = ">=3.28,<4"
+ninja = ">=1.13,<2"
+pkg-config = "*"
+gtest = "*"
+gmock = "*"
+qt6-main = ">=6.11.2,<6.12"
