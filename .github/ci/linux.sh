@@ -80,7 +80,7 @@ case "$1" in
     results_dir="$artifacts_dir/$phase-$wm"
     mkdir -p "$results_dir"
     if [[ "$wm" == matchbox ]]; then
-      matchbox-window-manager -use_titlebar no > "$results_dir/matchbox.log" 2>&1 &
+      matchbox-window-manager > "$results_dir/matchbox.log" 2>&1 &
       wm_pid=$!
       trap 'kill "$wm_pid" 2>/dev/null || true' EXIT
       for attempt in {1..100}; do
