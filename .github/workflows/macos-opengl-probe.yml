@@ -1,0 +1,46 @@
+name: Native macOS OpenGL probe
+
+on:
+  push:
+    branches: [ci/pr1870]
+    paths:
+      - .github/workflows/macos-opengl-probe.yml
+      - .github/ci/macos_opengl_probe.mm
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.repository == 'jcfurey/rviz'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x86_64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    name: Cocoa OpenGL / ${{ matrix.arch }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Probe native OpenGL without ROS or RoboStack
+        shell: bash
+        run: |
+          mkdir -p probe-evidence
+          uname -a | tee probe-evidence/platform.txt
+          system_profiler SPDisplaysDataType | tee probe-evidence/displays.txt
+          /usr/bin/clang++ -Wno-deprecated-declarations .github/ci/macos_opengl_probe.mm \
+            -framework Cocoa -framework OpenGL -o probe-evidence/opengl-probe
+          probe-evidence/opengl-probe | tee probe-evidence/opengl.txt
+      - name: Upload native graphics evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: native-macos-opengl-${{ matrix.arch }}
+          path: probe-evidence/*.txt
+          retention-days: 14
