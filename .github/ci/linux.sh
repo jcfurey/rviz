@@ -26,7 +26,7 @@ build_packages() {
   colcon --log-base "$artifacts_dir/build-$label" build \
     --base-paths "$source_dir" --build-base build --install-base install \
     --packages-select "$@" --packages-ignore rviz_ogre_vendor \
-    --executor sequential \
+    --executor sequential --event-handlers console_cohesion+ \
     --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON \
       -DEnableDisplayTests=True 2>&1 | tee "$artifacts_dir/build-$label.log"
 }

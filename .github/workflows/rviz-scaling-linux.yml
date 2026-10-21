@@ -1,5 +1,5 @@
 name: RViz scaling CI (Linux)
-run-name: RViz 1870 fixtures at 7fac2776 (Linux)
+run-name: RViz 1870 fixtures at 87425c55 (Linux)
 
 on:
   push:
@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  RVIZ_TEST_REF: 7fac27768fa3eaa562ee7bcdd070324418824fb2
+  RVIZ_TEST_REF: 87425c55384c89cde77c50df0959936fda6d66a5
   ROS_DISTRO: rolling
   QT_QPA_PLATFORM: xcb
   LIBGL_ALWAYS_SOFTWARE: '1'

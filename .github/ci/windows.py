@@ -67,7 +67,9 @@ def build(packages, label, env):
          "build", "--base-paths", str(SOURCE), "--build-base", str(ROOT / "b"),
          "--install-base", str(ROOT / "i"), "--packages-select", *packages,
          "--packages-ignore", "rviz_ogre_vendor", "--executor", "sequential",
-         "--cmake-args", "-G", "Ninja", "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
+         "--event-handlers", "console_cohesion+",
+         "--cmake-args", "-G", "Ninja", "-DCMAKE_BUILD_TYPE=Release",
+         "-DCMAKE_C_COMPILER_LAUNCHER=sccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=sccache",
          "-DBUILD_TESTING=ON", "-DEnableDisplayTests=True"], env, ARTIFACTS / ("build-" + label + ".log"))
 
 
