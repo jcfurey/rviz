@@ -1,0 +1,102 @@
+name: RViz scaling CI (Windows)
+run-name: RViz 1870 fixtures at 7fac2776 (Windows)
+
+on:
+  push:
+    branches: [ci/pr1870]
+    paths:
+      - .github/workflows/rviz-scaling-windows.yml
+      - .github/ci/windows.py
+
+permissions:
+  contents: read
+
+env:
+  RVIZ_TEST_REF: 7fac27768fa3eaa562ee7bcdd070324418824fb2
+  ROS_PREFIX: C:\r\ros2-windows
+  ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  GALLIUM_DRIVER: llvmpipe
+  QT_OPENGL: desktop
+
+jobs:
+  build-and-test:
+    if: github.repository == 'jcfurey/rviz'
+    name: Rolling / Windows MSVC
+    runs-on: windows-2025
+    timeout-minutes: 90
+    steps:
+      - name: Check out fork CI configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ci-config
+          persist-credentials: false
+      - name: Check out the exact follow-up commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RVIZ_TEST_REF }}
+          path: rviz-under-test
+          persist-credentials: false
+      - name: Download the official ROS nightly and software OpenGL
+        shell: pwsh
+        run: |
+          New-Item C:\r, C:\mesa -ItemType Directory -Force | Out-Null
+          $rosUrl = 'https://github.com/ros2/ros2/releases/download/release-rolling-nightlies/ros2-rolling-nightly-windows-amd64.zip'
+          Invoke-WebRequest $rosUrl -OutFile C:\r\ros.zip
+          $hash = (Get-FileHash C:\r\ros.zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne 'a16c44d235fe3e2570657c762b7778d4eb7f675efe7b94a31799b2a0c2b1a01a') {
+            throw 'The nightly bundle changed; update its recorded checksum before testing.'
+          }
+          & 'C:\Program Files\7-Zip\7z.exe' x C:\r\ros.zip -oC:\r -y
+          if ($LASTEXITCODE -ne 0) { throw 'ROS extraction failed' }
+          Invoke-WebRequest 'https://github.com/pal1000/mesa-dist-win/releases/download/26.2.4/mesa3d-26.2.4-release-msvc.7z' -OutFile C:\mesa\mesa.7z
+          & 'C:\Program Files\7-Zip\7z.exe' x C:\mesa\mesa.7z -oC:\mesa -y
+          if ($LASTEXITCODE -ne 0) { throw 'Mesa extraction failed' }
+      - name: Install the nightly bundle's locked Pixi dependencies
+        uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
+        with:
+          manifest-path: C:\r\ros2-windows\pixi.toml
+          environments: buildfarm
+          locked: true
+          cache: true
+      - name: Relocate the official ROS installation
+        shell: pwsh
+        run: |
+          Set-Location $env:ROS_PREFIX
+          pixi run -e buildfarm python preinstall_setup_windows.py
+          if ($LASTEXITCODE -ne 0) { throw 'ROS relocation failed' }
+      - name: Build rendering and common
+        shell: pwsh
+        run: |
+          pixi run --manifest-path "$env:ROS_PREFIX\pixi.toml" -e buildfarm python ci-config/.github/ci/windows.py build-common
+          if ($LASTEXITCODE -ne 0) { throw 'Rendering/common build failed' }
+      - name: Test mouse scaling without downstream plugins
+        shell: pwsh
+        run: |
+          pixi run --manifest-path "$env:ROS_PREFIX\pixi.toml" -e buildfarm python ci-config/.github/ci/windows.py mouse
+          if ($LASTEXITCODE -ne 0) { throw 'Isolated mouse tests failed' }
+      - name: Build default plugins and test support
+        shell: pwsh
+        run: |
+          pixi run --manifest-path "$env:ROS_PREFIX\pixi.toml" -e buildfarm python ci-config/.github/ci/windows.py build-plugins
+          if ($LASTEXITCODE -ne 0) { throw 'Plugin build failed' }
+      - name: Test viewport, focus, and marker scaling
+        shell: pwsh
+        run: |
+          pixi run --manifest-path "$env:ROS_PREFIX\pixi.toml" -e buildfarm python ci-config/.github/ci/windows.py matrix
+          if ($LASTEXITCODE -ne 0) { throw 'Scaling tests failed' }
+      - name: Run broader unit suites
+        shell: pwsh
+        run: |
+          pixi run --manifest-path "$env:ROS_PREFIX\pixi.toml" -e buildfarm python ci-config/.github/ci/windows.py gmock
+          if ($LASTEXITCODE -ne 0) { throw 'Unit suites failed' }
+      - name: Upload build and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rviz-1870-windows-msvc
+          path: |
+            C:\w\artifacts
+            C:\w\b\**\test_results
+          if-no-files-found: warn
+          retention-days: 14
