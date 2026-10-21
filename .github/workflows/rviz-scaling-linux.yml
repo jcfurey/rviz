@@ -1,0 +1,84 @@
+name: RViz scaling CI (Linux)
+run-name: RViz 1870 fixtures at 7fac2776 (Linux)
+
+on:
+  push:
+    branches: [ci/pr1870]
+    paths:
+      - .github/workflows/rviz-scaling-linux.yml
+      - .github/ci/linux.sh
+
+permissions:
+  contents: read
+
+env:
+  RVIZ_TEST_REF: 7fac27768fa3eaa562ee7bcdd070324418824fb2
+  ROS_DISTRO: rolling
+  QT_QPA_PLATFORM: xcb
+  LIBGL_ALWAYS_SOFTWARE: '1'
+  ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  MAKEFLAGS: -j2
+
+jobs:
+  build-and-test:
+    if: github.repository == 'jcfurey/rviz'
+    name: Rolling / ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 75
+    container: ros:rolling-ros-base-resolute
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out fork CI configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ci-config
+          persist-credentials: false
+      - name: Check out the exact follow-up commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RVIZ_TEST_REF }}
+          path: rviz-under-test
+          persist-credentials: false
+      - name: Install build and display dependencies
+        run: bash ci-config/.github/ci/linux.sh dependencies
+      - name: Build rendering and common
+        run: bash ci-config/.github/ci/linux.sh build-common
+      - name: Test mouse scaling without downstream plugins
+        run: |
+          for wm in none matchbox; do
+            xvfb-run -a -s '-screen 0 1280x1024x24 -nolisten tcp' \
+              bash ci-config/.github/ci/linux.sh test mouse "$wm"
+          done
+      - name: Build default plugins and test support
+        run: bash ci-config/.github/ci/linux.sh build-plugins
+      - name: Test viewport, focus, and marker scaling
+        run: |
+          for wm in none matchbox; do
+            xvfb-run -a -s '-screen 0 1280x1024x24 -nolisten tcp' \
+              bash ci-config/.github/ci/linux.sh test matrix "$wm"
+          done
+      - name: Run broader unit suites under Matchbox
+        run: |
+          xvfb-run -a -s '-screen 0 1280x1024x24 -nolisten tcp' \
+            bash ci-config/.github/ci/linux.sh test gmock matchbox
+      - name: Upload build and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rviz-1870-linux-${{ matrix.arch }}
+          path: |
+            validation/artifacts
+            validation/build/**/test_results
+          if-no-files-found: warn
+          retention-days: 14
