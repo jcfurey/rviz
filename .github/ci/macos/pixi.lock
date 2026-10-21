@@ -276,7 +276,9 @@ environments:
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-lint-cmake-0.21.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-mypy-0.21.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-pep257-0.21.1-np2py314h40712d6_29.conda
+      - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-pytest-2.9.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-python-2.9.1-np2py314h40712d6_29.conda
+      - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-ros-0.16.0-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-ros-core-0.16.0-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-target-dependencies-2.9.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-test-2.9.1-np2py314h40712d6_29.conda
@@ -290,6 +292,7 @@ environments:
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-index-cpp-1.14.2-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-index-python-1.14.2-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-0.21.1-np2py314h40712d6_29.conda
+      - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-auto-0.21.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-cmake-0.21.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-common-0.21.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-mypy-0.21.1-np2py314h40712d6_29.conda
@@ -355,6 +358,7 @@ environments:
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-implementation-cmake-7.11.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-security-common-7.11.1-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-test-fixture-0.16.0-np2py314h40712d6_29.conda
+      - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-test-fixture-implementation-0.16.0-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-zenoh-cpp-0.12.0-np2py314h453b95b_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ros-environment-5.0.0-np2py314h40712d6_29.conda
       - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ros-workspace-1.0.3-np2py314h40712d6_29.conda
@@ -4041,6 +4045,26 @@ packages:
   run_exports: {}
   size: 25304
   timestamp: 1790782667648
+- conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-pytest-2.9.1-np2py314h40712d6_29.conda
+  sha256: 0a0e22a3bcf6bd689815ea2b4be4fcb37298afe702015d8d6c526496e8c4aa83
+  md5: ace7e48eb88931120ebc303c008f9b05
+  attestations_sha256: f5ada4a326214f87f61c2e104eba847df745a412cdd7612799eec7575d4a2471
+  depends:
+  - pytest
+  - python
+  - ros2-ament-cmake-core
+  - ros2-ament-cmake-test
+  - ros2-distro-mutex 0.22.* rolling_*
+  - ros2-ros-workspace
+  - libcxx >=21
+  - __osx >=14.0
+  - python_abi 3.14.* *_cp314
+  - ros2-distro-mutex >=0.22.0,<0.23.0a0
+  - numpy >=1.25,<3
+  license: Apache-2.0
+  run_exports: {}
+  size: 26959
+  timestamp: 1790770410022
 - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-python-2.9.1-np2py314h40712d6_29.conda
   sha256: b88abd05993926b880ab07b2712de45757f933a9c3ea47a38425282d7326ddfb
   md5: e07321286c7985fd6c742b3c3220671f
@@ -4059,6 +4083,29 @@ packages:
   run_exports: {}
   size: 27497
   timestamp: 1790769856316
+- conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-ros-0.16.0-np2py314h40712d6_29.conda
+  sha256: 159880061d642dde8fc7948d8cb648b4ad9fff23dd9a0958171142cb150cba6c
+  md5: 514cb57a7d6a975641df38c06438f0c7
+  attestations_sha256: 17b7f639a4d8d4ffa3f7b3a67bbbc2bf35ab44f6cd8539016017a7dcc57b5456
+  depends:
+  - python
+  - ros2-ament-cmake
+  - ros2-ament-cmake-gmock
+  - ros2-ament-cmake-gtest
+  - ros2-ament-cmake-pytest
+  - ros2-ament-cmake-ros-core
+  - ros2-distro-mutex 0.22.* rolling_*
+  - ros2-rmw-test-fixture-implementation
+  - ros2-ros-workspace
+  - __osx >=14.0
+  - libcxx >=21
+  - numpy >=1.25,<3
+  - ros2-distro-mutex >=0.22.0,<0.23.0a0
+  - python_abi 3.14.* *_cp314
+  license: Apache-2.0
+  run_exports: {}
+  size: 32821
+  timestamp: 1790813135236
 - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-cmake-ros-core-0.16.0-np2py314h40712d6_29.conda
   sha256: 29f4d781158f221874e7a60d75f514a938e134d0aac9f2265602d4bed2e6b3d4
   md5: d5f590aef735d24e602a7791bbc64ba8
@@ -4299,6 +4346,25 @@ packages:
   run_exports: {}
   size: 19284
   timestamp: 1790769839254
+- conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-auto-0.21.1-np2py314h40712d6_29.conda
+  sha256: 86872d41174ad951a50eaa7d33cc74fac7a9aae6da7522158ce9919c8c30d1d5
+  md5: fbd7e0a22b777ee831690099ceb67b90
+  attestations_sha256: 444e7a0329a6f05905c8a09c63b37753e4dbd0b5ebfc482aa05056271a0fa5c2
+  depends:
+  - python
+  - ros2-ament-cmake-core
+  - ros2-ament-cmake-test
+  - ros2-distro-mutex 0.22.* rolling_*
+  - ros2-ros-workspace
+  - libcxx >=21
+  - __osx >=14.0
+  - python_abi 3.14.* *_cp314
+  - numpy >=1.25,<3
+  - ros2-distro-mutex >=0.22.0,<0.23.0a0
+  license: Apache-2.0
+  run_exports: {}
+  size: 24057
+  timestamp: 1790770400053
 - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-ament-lint-cmake-0.21.1-np2py314h40712d6_29.conda
   sha256: ace6a65ce4b7cf3379ab764fa8d541262d45ce8705dbe0f94a2ecc299cdd0116
   md5: 04550ea8d10ea875af5bbe07b13d7b80
@@ -5726,6 +5792,28 @@ packages:
   run_exports: {}
   size: 32459
   timestamp: 1790810297015
+- conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-test-fixture-implementation-0.16.0-np2py314h40712d6_29.conda
+  sha256: 18d1f86bea0fa6c8e32183662fc6364b6bd61db4c1b1af53af722700ee11e99d
+  md5: 64732c58ace02d1b3e7510d3ac021b77
+  attestations_sha256: 6b39f4e4004d679548eb24fcb2ea4203792578493d7d0b6bfc5c494ae17b294a
+  depends:
+  - python
+  - ros2-distro-mutex 0.22.* rolling_*
+  - ros2-rcpputils
+  - ros2-rcutils
+  - ros2-rmw
+  - ros2-rmw-test-fixture
+  - ros2-ros-workspace
+  - ros2-rpyutils
+  - libcxx >=21
+  - __osx >=14.0
+  - ros2-distro-mutex >=0.22.0,<0.23.0a0
+  - numpy >=1.25,<3
+  - python_abi 3.14.* *_cp314
+  license: Apache-2.0
+  run_exports: {}
+  size: 54082
+  timestamp: 1790813059084
 - conda: https://repo.prefix.dev/robostack-rolling/osx-arm64/ros2-rmw-zenoh-cpp-0.12.0-np2py314h453b95b_29.conda
   sha256: 2e9ee4d2a4e2a78c1d4a325b9d3b1bb99be9598c838a87a83da3c493da7224f5
   md5: 87d52817b528971fee94add0955f2789
