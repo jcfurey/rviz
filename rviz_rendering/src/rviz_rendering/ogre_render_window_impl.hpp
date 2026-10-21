@@ -87,12 +87,13 @@ public:
   void
   renderNow();
 
-  /// Resize the render surface.
+  /// Resize the render surface, optionally refreshing an unchanged backing surface.
   /**
    * \param width, height - these are expressed in logical Qt pixels
+   * \param force - refresh the backing surface even when dimensions are unchanged
    */
   void
-  resize(size_t width, size_t height);
+  resize(size_t width, size_t height, bool force = false);
 
   using setupSceneCallback = std::function<void (Ogre::SceneNode *)>;
   void
