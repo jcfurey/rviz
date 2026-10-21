@@ -79,6 +79,7 @@ jobs:
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py exposure
       - name: Build default plugins and test support
+        if: ${{ !cancelled() && steps.build-common.outcome == 'success' }}
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py build-plugins
