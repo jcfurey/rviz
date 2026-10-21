@@ -1,5 +1,5 @@
 name: RViz scaling CI (macOS)
-run-name: RViz 1870 fixtures at 7fac2776 (macOS Apple Silicon)
+run-name: RViz 1870 + 1890 at f88e3a45 (macOS Apple Silicon)
 
 on:
   push:
@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 env:
-  RVIZ_TEST_REF: 7fac27768fa3eaa562ee7bcdd070324418824fb2
+  RVIZ_TEST_REF: f88e3a457916b3f38030b02a55ae2ea029b29c6b
   ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
   CMAKE_BUILD_PARALLEL_LEVEL: '2'
   QT_QPA_PLATFORM: cocoa
@@ -63,6 +63,7 @@ jobs:
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py environment
       - name: Build rendering and common
+        id: build-common
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py build-common
@@ -71,6 +72,12 @@ jobs:
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py mouse
+      - name: Test Cocoa expose and backing-surface regressions
+        id: exposure-tests
+        if: ${{ !cancelled() && steps.build-common.outcome == 'success' }}
+        run: |
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
+            python ci-config/.github/ci/macos.py exposure
       - name: Build default plugins and test support
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
@@ -83,8 +90,8 @@ jobs:
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py gmock
-      - name: Diagnose native mouse-test crashes
-        if: ${{ failure() && steps.mouse-tests.outcome == 'failure' }}
+      - name: Diagnose native rendering-test crashes
+        if: ${{ failure() && (steps.mouse-tests.outcome == 'failure' || steps.exposure-tests.outcome == 'failure') }}
         run: |
           pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py diagnostics

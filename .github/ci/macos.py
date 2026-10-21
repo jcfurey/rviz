@@ -123,7 +123,8 @@ def diagnostics(env):
     reports = ARTIFACTS / "native-crash-reports"
     reports.mkdir(exist_ok=True)
     for report in (Path.home() / "Library/Logs/DiagnosticReports").glob("*"):
-        if report.is_file() and report.name.startswith(("viewport_mouse", "render_window_scal")):
+        if report.is_file() and report.name.startswith((
+                "viewport_mouse", "render_window_scal", "render_window_ex")):
             shutil.copy2(report, reports / report.name)
 
 
@@ -146,6 +147,8 @@ elif phase == "build-plugins":
 elif phase == "mouse":
     isolate_plugins(env)
     test("rviz_common", "isolated-mouse", ["-R", "^viewport_mouse_event_test_"], env)
+elif phase == "exposure":
+    test("rviz_rendering", "cocoa-exposure", ["-R", "^render_window_exposure_test$"], env)
 elif phase == "diagnostics":
     diagnostics(env)
 elif phase == "matrix":
