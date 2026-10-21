@@ -7,7 +7,8 @@ on:
     paths:
       - .github/workflows/rviz-scaling-macos.yml
       - .github/ci/macos.py
-      - .github/ci/macos-pixi.toml
+      - .github/ci/macos/pixi.toml
+      - .github/ci/macos/pixi.lock
 
 permissions:
   contents: read
@@ -44,31 +45,33 @@ jobs:
       - name: Install RoboStack Rolling and Qt 6.11 for Apple Silicon
         uses: prefix-dev/setup-pixi@ad1da6449d9e506fd127fd67ab2d054a769f6a94 # v0.11.2
         with:
-          manifest-path: ci-config/.github/ci/macos-pixi.toml
-          cache: false
+          manifest-path: ci-config/.github/ci/macos/pixi.toml
+          pixi-version: '0.82.1'
+          locked: true
+          cache: true
       - name: Record native display scale and build environment
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py environment
       - name: Build rendering and common
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py build-common
       - name: Test mouse scaling without downstream plugins
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py mouse
       - name: Build default plugins and test support
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py build-plugins
       - name: Test native Cocoa viewport and marker menus plus forced-scale focus
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py matrix
       - name: Run broader unit suites
         run: |
-          pixi run --manifest-path ci-config/.github/ci/macos-pixi.toml \
+          pixi run --manifest-path ci-config/.github/ci/macos/pixi.toml \
             python ci-config/.github/ci/macos.py gmock
       - name: Upload build, display, and test evidence
         if: always()
@@ -78,6 +81,6 @@ jobs:
           path: |
             validation/artifacts
             validation/build/**/test_results
-            ci-config/.github/ci/pixi.lock
+            ci-config/.github/ci/macos/pixi.lock
           if-no-files-found: warn
           retention-days: 14
