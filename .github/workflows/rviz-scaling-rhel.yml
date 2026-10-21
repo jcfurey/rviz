@@ -1,0 +1,79 @@
+name: RViz scaling CI (RHEL)
+run-name: RViz 1870 fixtures at 87425c55 (RHEL 10)
+
+on:
+  push:
+    branches: [ci/pr1870]
+    paths:
+      - .github/workflows/rviz-scaling-rhel.yml
+      - .github/ci/rhel.sh
+      - .github/ci/linux.sh
+
+permissions:
+  contents: read
+
+env:
+  RVIZ_TEST_REF: 87425c55384c89cde77c50df0959936fda6d66a5
+  ROS_DISTRO: rolling
+  QT_QPA_PLATFORM: xcb
+  LIBGL_ALWAYS_SOFTWARE: '1'
+  ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  MAKEFLAGS: -j2
+  LANG: en_US.UTF-8
+
+jobs:
+  build-and-test:
+    if: github.repository == 'jcfurey/rviz'
+    name: Rolling / AlmaLinux 10 / x86_64 / Xwayland
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container: almalinux:10
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Bootstrap Git for exact source checkouts
+        run: dnf install -y git
+      - name: Check out fork CI configuration
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: ci-config
+          persist-credentials: false
+      - name: Check out the exact follow-up commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.RVIZ_TEST_REF }}
+          path: rviz-under-test
+          persist-credentials: false
+      - name: Install build and display dependencies
+        run: bash ci-config/.github/ci/rhel.sh dependencies
+      - name: Build rendering and common
+        run: bash ci-config/.github/ci/rhel.sh build-common
+      - name: Test mouse scaling without downstream plugins
+        run: |
+          xwfb-run -n99 -s=-ac -s=-geometry -s=1280x1024 \
+            -e validation/artifacts/xwayland-mouse.log -- \
+            bash ci-config/.github/ci/rhel.sh test mouse none
+      - name: Build default plugins and test support
+        run: bash ci-config/.github/ci/rhel.sh build-plugins
+      - name: Test viewport, focus, and marker scaling
+        run: |
+          xwfb-run -n99 -s=-ac -s=-geometry -s=1280x1024 \
+            -e validation/artifacts/xwayland-matrix.log -- \
+            bash ci-config/.github/ci/rhel.sh test matrix none
+      - name: Run broader unit suites under Xwayland
+        run: |
+          xwfb-run -n99 -s=-ac -s=-geometry -s=1280x1024 \
+            -e validation/artifacts/xwayland-gmock.log -- \
+            bash ci-config/.github/ci/rhel.sh test gmock none
+      - name: Upload build and test evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rviz-1870-rhel10-x86_64-xwayland
+          path: |
+            validation/artifacts
+            validation/build/**/test_results
+          if-no-files-found: warn
+          retention-days: 14
