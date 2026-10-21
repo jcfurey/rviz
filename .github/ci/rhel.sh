@@ -32,6 +32,10 @@ dnf install -y \
   xwayland-run xorg-x11-xauth \
   mesa-dri-drivers mesa-libGL mesa-libGLU
 
+# RHEL 10 dropped pydocstyle; Rolling xacro has no release RPM here.
+# Provision their Python distributions explicitly, as upstream does for pydocstyle.
+python3 -m pip install 'pydocstyle==6.3.0' 'xacro==2.1.1'
+
 ros_prefix="/opt/ros/$ROS_DISTRO"
 ros_bundle="$ci_root/validation/ros2-rolling-nightly-linux-rhel-amd64.tar.bz2"
 if [[ ! -f "$ros_bundle" ]]; then
@@ -43,13 +47,17 @@ printf '%s  %s\n' \
   b57ae57908ee72adddd8c47cdf7dd50a0072103e10e139a105e78a841fafa20f \
   "$ros_bundle" | sha256sum --check
 mkdir -p "$ros_prefix"
-tar -xjf "$ros_bundle" --strip-components=1 -C "$ros_prefix"
+if [[ ! -f "$ros_prefix/setup.bash" ]]; then
+  tar -xjf "$ros_bundle" --strip-components=1 -C "$ros_prefix"
+fi
 
 # The nightly includes downstream RViz. Keep its plugin registration out of
 # discovery until our source-built default plugins register themselves.
 plugin_registration="$ros_prefix/share/ament_index/resource_index/rviz_common__pluginlib__plugin/rviz_default_plugins"
-cp "$plugin_registration" "$artifacts_dir/underlay-rviz-default-plugins.txt"
-rm "$plugin_registration"
+if [[ -f "$plugin_registration" ]]; then
+  cp "$plugin_registration" "$artifacts_dir/underlay-rviz-default-plugins.txt"
+  rm "$plugin_registration"
+fi
 
 # shellcheck source=/dev/null
 source "$ros_prefix/setup.bash"
@@ -61,7 +69,7 @@ rosdep update --rosdistro "$ROS_DISTRO"
 for dependency_path in "$ros_prefix/share" "$source_dir"; do
   rosdep install --from-paths "$dependency_path" --ignore-src \
     --rosdistro "$ROS_DISTRO" --os=rhel:10 -y \
-    --skip-keys 'cyclonedds fastcdr fastdds iceoryx_binding_c rti-connext-dds-7.7.0 urdfdom_headers'
+    --skip-keys 'cyclonedds fastcdr fastdds iceoryx_binding_c rti-connext-dds-7.7.0 urdfdom_headers xacro pydocstyle'
 done
 
 {
@@ -72,6 +80,7 @@ done
   cmake --version
   pkg-config --modversion Qt6Core
   rpm -q xwayland-run qt6-qtbase mesa-libGL
+  python3 -m pip show pydocstyle xacro
   printf 'ROS nightly SHA256: %s\n' \
     b57ae57908ee72adddd8c47cdf7dd50a0072103e10e139a105e78a841fafa20f
 } > "$artifacts_dir/environment.txt"
